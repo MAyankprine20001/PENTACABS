@@ -12,12 +12,24 @@ router.get("/api/outstation-routes", async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
+    const search = req.query.search?.trim();
 
-    const routes = await OutstationEntry.find()
+    // Build search query - search in both city1 and city2 fields
+    let query = {};
+    if (search) {
+      query = {
+        $or: [
+          { city1: { $regex: search, $options: "i" } },
+          { city2: { $regex: search, $options: "i" } },
+        ],
+      };
+    }
+
+    const routes = await OutstationEntry.find(query)
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
-    const total = await OutstationEntry.countDocuments();
+    const total = await OutstationEntry.countDocuments(query);
 
     res.json({
       routes,
